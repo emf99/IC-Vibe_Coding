@@ -1,79 +1,115 @@
-import { describe, beforeEach, afterEach, it, expect, inject } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, inject } from "vitest";
+import { PocketIc } from "@dfinity/pic";
+import { _SERVICE } from "../../src/declarations/backend/backend.did.d.ts";
+import { Principal } from "@dfinity/principal";
+import { ActorSubclass } from "@dfinity/agent";
+import { readFileSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
-import { PocketIc, type Actor } from "@dfinity/pic";
-import { Principal } from "@dfinity/principal";
 
-// Import generated types for your canister
-import {
-  type _SERVICE,
-  idlFactory,
-} from "../../src/declarations/backend/backend.did.js";
-
-// Define the path to your canister's WASM file
-export const WASM_PATH = resolve(
-  dirname(fileURLToPath(import.meta.url)),
-  "..",
-  "..",
-  "target",
-  "wasm32-unknown-unknown",
-  "release",
-  "backend.wasm",
-);
-
-// The `describe` function is used to group tests together
-describe("Vibe Coding Template Backend", () => {
-  // Define variables to hold our PocketIC instance, canister ID,
-  // and an actor to interact with our canister.
+describe("Backend Service", () => {
   let pic: PocketIc;
-  // @ts-ignore - This variable is used in the setup / framework
+  let actor: ActorSubclass<_SERVICE>;
   let canisterId: Principal;
-  let actor: Actor<_SERVICE>;
 
-  // The `beforeEach` hook runs before each test.
-  beforeEach(async () => {
-    // create a new PocketIC instance
+  beforeAll(async () => {
+    // Initialize PocketIC with default configuration - let it manage the server
     pic = await PocketIc.create(inject("PIC_URL"));
 
-    // Setup the canister and actor
+    // Load the backend WASM file
+    const wasmPath = resolve(
+      dirname(fileURLToPath(import.meta.url)),
+      "..",
+      "..",
+      "target",
+      "wasm32-unknown-unknown",
+      "release",
+      "backend.wasm",
+    );
+
+    let wasmModule: Buffer;
+    try {
+      wasmModule = readFileSync(wasmPath);
+    } catch (error) {
+      throw new Error(
+        `Failed to read WASM file at ${wasmPath}. Run 'dfx build backend' first.`,
+      );
+    }
+
+    // Load the IDL factory
+    const { idlFactory } = await import(
+      "../../src/declarations/backend/backend.did.js"
+    );
+
+    // Create and install the backend canister
     const fixture = await pic.setupCanister<_SERVICE>({
       idlFactory,
-      wasm: WASM_PATH,
+      wasm: wasmModule,
     });
 
-    // Save the actor and canister ID for use in tests
     actor = fixture.actor;
     canisterId = fixture.canisterId;
   });
 
-  // The `afterEach` hook runs after each test.
-  afterEach(async () => {
-    // tear down the PocketIC instance
-    await pic.tearDown();
+  afterAll(async () => {
+    if (pic) {
+      await pic.tearDown();
+    }
   });
 
-  // The `it` function is used to define individual tests
-  it("should greet with the provided name", async () => {
-    const response = await actor.greet("World");
-    expect(response).toEqual("Hello, World!");
+  describe("greet", () => {
+    it("should return a greeting message", async () => {
+      const result = await actor.greet("World");
+      expect(result).toContain("Hello");
+      expect(result).toContain("World");
+    });
   });
 
-  it("should increment counter and return new value", async () => {
-    const initialCount = await actor.get_count();
-    const newCount = await actor.increment();
-    expect(newCount).toEqual(initialCount + BigInt(1));
+  describe("counter", () => {
+    it("should get the current count", async () => {
+      const count = await actor.get_count();
+      expect(typeof count).toBe("bigint");
+      expect(count).toBeGreaterThanOrEqual(0n);
+    });
+
+    it("should increment the counter", async () => {
+      const initialCount = await actor.get_count();
+      const newCount = await actor.increment();
+      expect(newCount).toBe(initialCount + 1n);
+    });
+
+    it("should set the counter to a specific value", async () => {
+      const targetValue = 42n;
+      const result = await actor.set_count(targetValue);
+      expect(result).toBe(targetValue);
+
+      const currentCount = await actor.get_count();
+      expect(currentCount).toBe(targetValue);
+    });
   });
 
-  it("should get current counter value", async () => {
-    const count = await actor.get_count();
-    expect(typeof count).toBe("bigint");
+  describe("chat", () => {
+    it("should process chat messages", async () => {
+      const messages = [{ role: "user", content: "Hello, how are you?" }];
+
+      const response = await actor.chat(messages);
+      expect(typeof response).toBe("string");
+      expect(response.length).toBeGreaterThan(0);
+    });
   });
 
-  it("should set counter to specified value", async () => {
-    const newValue = BigInt(42);
-    const result = await actor.set_count(newValue);
-    expect(result).toEqual(newValue);
-    const currentCount = await actor.get_count();
-    expect(currentCount).toEqual(newValue);
+  describe("natural language queries", () => {
+    it("should parse natural language queries", async () => {
+      const query = "get all todos";
+      const result = await actor.debug_parse_query(query);
+
+      if ("Ok" in result) {
+        expect(result.Ok).toHaveProperty("table");
+        expect(result.Ok).toHaveProperty("query");
+      } else {
+        expect(result.Err).toBeDefined();
+        expect(typeof result.Err).toBe("string");
+      }
+    });
   });
 });

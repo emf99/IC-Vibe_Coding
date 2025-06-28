@@ -1,21 +1,32 @@
-type AssistantMessage = record {
-  content : opt text;
-  tool_calls : vec ToolCall;
+type ChatMessage = record { content : text; role : text };
+type HttpHeader = record { value : text; name : text };
+type HttpResponse = record {
+  status : nat;
+  body : blob;
+  headers : vec HttpHeader;
 };
-type ChatMessage = variant {
-  tool : record { content : text; tool_call_id : text };
-  user : record { content : text };
-  assistant : AssistantMessage;
-  system : record { content : text };
+type QueryParseResult = record {
+  table : text;
+  "query" : text;
+  error : opt text;
 };
-type FunctionCall = record { name : text; arguments : vec ToolCallArgument };
-type ToolCall = record { id : text; function : FunctionCall };
-type ToolCallArgument = record { value : text; name : text };
+type Result = variant { Ok : SupabaseResponse; Err : text };
+type Result_1 = variant { Ok : QueryParseResult; Err : text };
+type SupabaseResponse = record { data : opt text; error : opt text };
+type TransformArgs = record { context : blob; response : HttpResponse };
 service : {
   chat : (vec ChatMessage) -> (text);
+  create_test_todos : () -> (Result);
+  debug_parse_query : (text) -> (Result_1);
+  fetch_from_supabase : (text, text) -> (Result);
+  fetch_from_supabase_no_encoding : (text, text) -> (Result);
   get_count : () -> (nat64) query;
   greet : (text) -> (text) query;
   increment : () -> (nat64);
-  prompt : (text) -> (text);
+  insert_to_supabase : (text, text) -> (Result);
+  parse_natural_language_query_fallback : (text) -> (Result_1);
+  parse_natural_language_query_with_llm : (text) -> (Result_1);
+  query_supabase_with_natural_language : (text) -> (Result);
   set_count : (nat64) -> (nat64);
+  transform : (TransformArgs) -> (HttpResponse) query;
 }

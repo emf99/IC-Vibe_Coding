@@ -1,302 +1,405 @@
-# 🧪🔥 Ultimate IC Vibe Coding Template
+# IC-Vibe_Coding
 
-This template was built for the **IC Vibe Coding Bootcamp (Rust Edition)** and it's meant to be used in Advance Challenge or in a future Hackathon.
+🚀 **Internet Computer Protocol (ICP) project with AI-powered natural language database queries**
 
-## Welcome! 👋
+Transform plain English questions into structured database queries using advanced AI models running on the Internet Computer blockchain.
 
-This repository offers a high-quality, production-ready template to jumpstart your Internet Computer (ICP) development.
+## ✨ Features
 
-It includes:
+- 🤖 **Natural Language Processing** - Ask questions in plain English like "show me completed todos"
+- 🔍 **Real-time Query Parsing** - Watch your natural language get converted to structured queries
+- 🌐 **Internet Computer Protocol** - Fully decentralized backend running on ICP canisters
+- 🔒 **Secure Architecture** - Database credentials never leave the IC canister
+- ⚡ **Real-time Results** - Instant query execution and formatted results
+- 🎨 **Modern UI** - Clean, responsive interface built with React and Tailwind CSS
+- 🧠 **Distributed AI** - LLM processing handled by dedicated IC canister
 
-- 🦀 **Rust-based Canister** backend
-- ⚛️ **React + Tailwind + Typescript** frontend
-- 🤖 **IC LLM Canister** integration for Agentic workflows
-- 🧪 **Full Test Suite**: Vitest + PocketIC for backend and frontend
-- 🔁 **CI/CD** with GitHub Actions for automated tests and code quality
-- 🤖 **Copilot Integration** to auto-generate tests, code, and changelogs
+## 🛠️ Tech Stack
 
-Whether you're building full-stack dapps or agents, this template gives you a solid foundation to start fast and scale smoothly. 🚀
+### Backend
 
-![Template Screenshot](.github/assets/template-screenshot.png)
+- **Rust** - IC canister development
+- **Internet Computer Protocol (ICP)** - Decentralized hosting
+- **PocketIC + Vitest** - Testing framework
 
----
+### Frontend
 
-## 📜 Table of Contents
+- **Vite** - Build tool and development server
+- **React + TypeScript** - Component framework
+- **Tailwind CSS v4** - Styling with utility classes
 
-- [🎥 Recording](#-recording)
-- [🚀 Getting Started](#-getting-started)
-- [📁 Project Structure](#-project-structure)
-- [✅ Testing Patterns](#-testing-patterns)
-- [🔄 CI/CD Workflow](#-cicd-workflow)
-- [🧠 GitHub Copilot Integration](#-github-copilot-integration)
-- [🔗 Resources & Documentation](#-learning-resources)
-- [📩 Submit Your Project!](#-submit-your-project)
+### Database & AI
 
----
+- **Supabase** - PostgreSQL database with REST API
+- **LLM Canister** - Dedicated AI processing canister for natural language understanding
 
-## 🎥 Recording
+## 🏗️ Architecture
 
-There was an Advanced Challenge Lab session, that was recorded and had a lot of information and showcase of Vibe Coding using this template.
+The project consists of three main canisters:
 
-You can see here the full recording: https://www.youtube.com/watch?v=ZuNUy13wmlI
+### 1. **Backend Canister** (`backend`)
 
----
+- Main application logic
+- Secure Supabase credential management
+- Database query execution
+- Natural language query coordination
 
-## 🚀 Getting Started
+### 2. **LLM Canister** (`llm`)
 
-### 🧑‍💻 1. Get Codespace Ready
+- AI model processing
+- Natural language to SQL conversion
+- Query parsing and validation
+- Text analysis and understanding
 
-A **devcontainer** is preconfigured for you to start coding instantly!
+### 3. **Frontend Canister** (`frontend`)
 
-- Click on "Use this Template" → "Create a new repository".
-- Click "Code → Open with Codespaces"
-- Change machine type to 4-core 16GB RAM • 32GB
-- Once the codespace is created, you can open it in VS Code Local
-- Everything is pre-installed and ready for you to run the following commands
+- React application hosting
+- User interface delivery
+- Static asset management
 
-### 2. Install Dependencies
+## 🚀 Quick Start
+
+### Prerequisites
+
+- [DFX](https://internetcomputer.org/docs/current/developer-docs/setup/install/) (Internet Computer SDK)
+- [Node.js](https://nodejs.org/) (v18+)
+- [Rust](https://rustup.rs/)
+
+### Installation
+
+1. **Clone the repository**
+
+```bash
+git clone https://github.com/YOUR_USERNAME/IC-Vibe_Coding.git
+cd IC-Vibe_Coding
+```
+
+2. **Install dependencies**
 
 ```bash
 npm install
 ```
 
-### 3. Running Ollama
-
-To be able to test the agent locally, you'll need a server for processing the agent's prompts. For that, we'll use `ollama`, which is a tool that can download and serve LLMs.
-See the documentation on the [Ollama website](https://ollama.com/). Run:
+3. **Start the local IC replica**
 
 ```bash
-ollama serve
-# Expected to start listening on port 11434
+dfx start --background --clean
 ```
 
-The above command will start the Ollama server, so that it can process requests by the agent. Additionally, and in a separate window, run the following command to download the LLM that will be used by the agent:
+4. **Deploy all canisters**
 
 ```bash
-ollama run llama3.1:8b
+# Deploy LLM canister first (required for natural language processing)
+dfx deploy llm
+
+# Deploy backend canister (depends on LLM canister)
+dfx deploy backend
+
+# Deploy frontend canister
+dfx deploy frontend
+
+# Or deploy all at once
+dfx deploy
 ```
 
-Once the command executes and the model is loaded, you can terminate it by typing /bye. You won't need to do this step again.
-
-### 4. Deployment
-
-Then, in one terminal window, run:
+5. **Start the development server**
 
 ```bash
-dfx start --clean
-```
-
-Keep this tab open for reading logs.
-
-Then pull the dependency and deploy the canisters in another window:
-
-```bash
-dfx deploy # deploys the backend and frontend canisters
-```
-
-```bash
-dfx deps pull
-dfx deps deploy  # deploys the llm canister
-```
-
-### 5. Start the Development Server
-
-You can start the frontend development server with:
-
-```bash
-# Just the frontend development server
 npm start
-
 ```
 
-### 6. Run Tests
+6. **Open the application**
+   - Visit `http://localhost:5173`
+   - The app will automatically use mock data for immediate testing
+
+## 🎯 Usage
+
+### Natural Language Queries
+
+Navigate to the **"Natural Query"** tab and try these example queries:
+
+```
+"get all todos"
+"show completed todos"
+"find incomplete tasks"
+"list all users"
+"show me todos that are done"
+"find todos with id 1"
+```
+
+### How It Works
+
+1. **User Input** → Frontend captures natural language query
+2. **Backend Canister** → Receives query and forwards to LLM canister
+3. **LLM Canister** → Processes natural language and returns structured query
+4. **Backend Canister** → Executes database query using parsed results
+5. **Frontend** → Displays formatted results to user
+
+### Demo Features
+
+- **Counter Demo** - Basic canister interaction with state management
+- **Greeting Demo** - Simple text processing and response
+- **LLM Chat** - Direct conversation with the LLM canister
+- **Natural Query** - Database querying with natural language (uses both backend and LLM canisters)
+
+## 🏗️ Project Structure
+
+```
+IC-Vibe_Coding/
+├── src/
+│   ├── backend/                 # Main Rust IC canister
+│   │   ├── src/lib.rs          # Backend logic, database integration
+│   │   └── Cargo.toml          # Backend dependencies
+│   ├── llm/                    # LLM processing canister
+│   │   ├── src/lib.rs          # AI model integration
+│   │   └── Cargo.toml          # LLM dependencies
+│   └── frontend/               # React TypeScript frontend
+│       ├── src/
+│       │   ├── components/     # Reusable UI components
+│       │   ├── views/          # Page-level components
+│       │   ├── services/       # IC canister interaction
+│       │   └── App.tsx         # Main application
+│       └── package.json        # Frontend dependencies
+├── dfx.json                    # IC project configuration (defines all canisters)
+└── package.json               # Workspace configuration
+```
+
+## 🔧 Development
+
+### Backend Development
 
 ```bash
+# Check Rust code for errors
+cargo check
+
+# Generate Candid interfaces after changes
+npm run generate-candid
+
+# Deploy specific canisters
+dfx deploy backend
+dfx deploy llm
+```
+
+### Frontend Development
+
+```bash
+# Check TypeScript for errors
+npx tsc -p src/frontend/tsconfig.json
+
+# Format code (TypeScript + Rust)
+npm run format
+
+# Deploy frontend canister
+dfx deploy frontend
+```
+
+### Canister Interaction
+
+The canisters communicate as follows:
+
+```rust
+// Backend canister calls LLM canister
+use ic_cdk::api::call::call;
+
+#[ic_cdk::update]
+async fn process_natural_language(query: String) -> String {
+    let llm_canister_id = /* LLM canister ID */;
+    let result: (String,) = call(llm_canister_id, "process_query", (query,))
+        .await
+        .expect("Failed to call LLM canister");
+    result.0
+}
+```
+
+### Testing
+
+```bash
+# Run backend tests
+cargo test
+
+# Test specific canister
+cd src/backend && cargo test
+cd src/llm && cargo test
+
+# Frontend tests (if configured)
 npm test
 ```
 
-You can also run:
+## 🔒 Security & Configuration
+
+### Canister Security
+
+- **LLM Canister** - Processes only text input, no sensitive data access
+- **Backend Canister** - Secure credential storage, controlled database access
+- **Frontend Canister** - Public hosting, no sensitive operations
+
+### Database Setup (Optional)
+
+The project works with mock data by default. For real database integration:
+
+1. Create a [Supabase](https://supabase.com) account
+2. Create a new project
+3. Copy the template:
 
 ```bash
-npm test tests/src/backend.test.ts    # individual test
+cp .env.example .env
+```
+
+4. Add your credentials to `.env`:
+
+```bash
+VITE_SUPABASE_URL=your_supabase_url_here
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+```
+
+### LLM Configuration
+
+The LLM canister can be configured for different AI models or providers. Check the canister documentation for specific setup requirements.
+
+## 🚀 Deployment
+
+### Local Development
+
+```bash
+dfx start --background --clean
+
+# Deploy all canisters
+dfx deploy
+
+# Or deploy individually
+dfx deploy llm      # Deploy LLM canister first
+dfx deploy backend  # Deploy backend (depends on LLM)
+dfx deploy frontend # Deploy frontend
+```
+
+### IC Mainnet
+
+```bash
+# Deploy to IC mainnet
+dfx deploy --network ic
+
+# Check canister status
+dfx canister status --network ic backend
+dfx canister status --network ic llm
+dfx canister status --network ic frontend
+```
+
+### Canister URLs
+
+After deployment, your canisters will be available at:
+
+- **Frontend**: `https://{frontend-canister-id}.ic0.app`
+- **Backend**: Accessible via Candid interface
+- **LLM**: Accessible via Candid interface
+
+## 📋 Available Scripts
+
+```bash
+npm start              # Start frontend development server
+npm run build          # Build frontend for production
+npm run format         # Format TypeScript and Rust code
+npm run generate-candid # Generate Candid interface declarations for all canisters
+dfx start              # Start local IC replica
+dfx deploy             # Deploy all canisters
+dfx deploy llm         # Deploy only LLM canister
+dfx deploy backend     # Deploy only backend canister
+dfx deploy frontend    # Deploy only frontend canister
+dfx stop               # Stop local IC replica
+```
+
+## 🧠 LLM Canister Details
+
+### Functionality
+
+- Natural language processing and understanding
+- Query parsing and SQL generation
+- Text analysis and intent recognition
+- Response formatting and validation
+
+### API Methods
+
+- `process_query(text: String) -> String` - Main NLP processing
+- `chat(messages: Vec<Message>) -> String` - Conversational interface
+- `parse_sql_intent(query: String) -> ParseResult` - Specific SQL parsing
+
+### Dependencies
+
+The LLM canister may require specific dependencies or external service integration. Check the canister's `Cargo.toml` for requirements.
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make your changes across relevant canisters
+4. Test all canister interactions: `npm run format && dfx deploy`
+5. Commit your changes: `git commit -m 'Add amazing feature'`
+6. Push to the branch: `git push origin feature/amazing-feature`
+7. Open a Pull Request
+
+### Development Guidelines
+
+- Test canister-to-canister communication thoroughly
+- Update Candid interfaces when changing canister APIs
+- Use proper error handling for inter-canister calls
+- Document any new LLM capabilities or configuration options
+
+## 🔗 Links & Resources
+
+- [Internet Computer Documentation](https://internetcomputer.org/docs/)
+- [DFX SDK Reference](https://internetcomputer.org/docs/current/references/cli-reference/dfx-parent)
+- [Candid Interface Guide](https://internetcomputer.org/docs/current/references/candid-ref/)
+- [React Documentation](https://react.dev/)
+- [Tailwind CSS v4](https://tailwindcss.com/)
+- [Supabase Documentation](https://supabase.com/docs)
+
+## 📝 License
+
+This project is open source and available under the [MIT License](LICENSE).
+
+## 🙋‍♂️ Support
+
+Having issues? Check out:
+
+1. **Common Issues** - Review the troubleshooting section below
+2. **IC Community** - [Internet Computer Developer Forum](https://forum.dfinity.org/)
+3. **GitHub Issues** - Create an issue for bugs or feature requests
+
+### Troubleshooting
+
+**DFX Port Already in Use**
+
+```bash
+dfx stop
+dfx start --clean
+```
+
+**LLM Canister Communication Issues**
+
+```bash
+# Check canister status
+dfx canister status llm
+dfx canister status backend
+
+# Redeploy with dependencies
+dfx deploy llm
+dfx deploy backend
+```
+
+**TypeScript Errors**
+
+```bash
+npx tsc -p src/frontend/tsconfig.json
+npm run format
+```
+
+**Canister Deploy Issues**
+
+```bash
+dfx stop
+dfx start --clean
+dfx deploy
 ```
 
 ---
 
-## 📁 Project Structure
-
-```
-ICP-Bootcamp-Vibe-Coding/
-├── .devcontainer/devcontainer.json       # Container config for running your own codespace
-├── .github/instructions/                 # Copilot general and language specific instructions
-├── .github/prompts/                      # Copilot Prompts, like add feature and changes review
-├── .github/workflows/                    # GitHub CI/CD pipelines
-├── src/
-│   ├── backend/                          # Rust backend canister
-│   │   ├── src/
-│   │   │   └── lib.rs                    # Main Rust file
-│   │   └── Cargo.toml                    # Rust dependencies
-│   ├── frontend/                         # React + Tailwind + TypeScript frontend
-│   │   ├── src/
-│   │   │   ├── App.tsx                   # Main App component
-│   │   │   ├── index.css                 # Global styles with Tailwind
-│   │   │   ├── components/               # Reusable UI components
-│   │   │   ├── services/                 # Canister service layers
-│   │   │   └── views/                    # Page-level components
-│   │   ├── assets/                       # Static assets (images, icons)
-│   │   ├── tests/                        # Frontend unit tests
-│   │   ├── index.html                    # Frontend entry point
-│   │   ├── main.tsx                      # React main file
-│   │   ├── package.json                  # Frontend dependencies
-│   │   ├── tsconfig.json                 # TypeScript configuration
-│   │   ├── vite.config.ts                # Vite build configuration
-│   │   └── vite-env.d.ts                 # Vite type definitions
-│   └── declarations/                     # Auto-generated canister interfaces
-├── tests/
-│   ├── src/                              # Backend test files
-│   ├── backend-test-setup.ts             # PocketIC instance
-│   └── vitest.config.ts                  # Vitest configuration
-├── scripts/
-│   ├── dev-container-setup.sh            # Extra set up steps for codespace
-│   └── generate-candid.sh                # Useful one way script to build, generate candid and did files
-├── dfx.json                              # ICP config
-├── Cargo.toml                            # Root Rust workspace config
-└── CHANGELOG.md
-```
-
----
-
-## 🔄 CI/CD Workflow
-
-Located under `.github/workflows/`, this includes:
-
-- 🧪 Automated end-2-end test runs
-
-It could be extended to:
-
-- check for security updates (audit);
-- test coverage;
-- code quality.
-
----
-
-## 🧠 **GitHub Copilot Integration**
-
-This project leverages two key customization folders:
-
-- `.github/instructions/` – Provides essential context to guide AI responses.
-- `.github/prompts/` – Defines workflow prompts to effectively assist you.
-
-Think of the AI as a super-fast junior developer, handling the heavy lifting while you focus on quality control. Instead of using PRs, you’re reviewing and refining code directly in the IDE through Copilot chat.
-
-### 📝 **About Instructions**
-
-Instructions provide "context" that applies to specific files using regex patterns defined in `applyTo`. They are ideal for project-wide or language-specific guidance.
-
-**Current Instructions:**
-
-- **general:** `applyTo: **`
-- **rust:** `applyTo: */*.rs`
-- **test:** `applyTo: tests/**`
-
-**Examples of Context You Can Define:**
-
-- This is an ICP project using Rust canisters.
-- For Rust, we follow Clippy and Rust FMT style guides and linting tools.
-- For tests, we use **Pocket IC** and maintain a specific test structure.
-
-### 🛠️ **About Prompts**
-
-Prompts define specific tasks and guide the AI through a structured workflow. They are especially useful for maintaining a consistent development process.
-
----
-
-#### ✨ **Add Feature Prompt**
-
-```markdown
-/add-feature Add a function to decrease the counter value
-```
-
-In this workflow, Copilot follows a Spec Driven Workflow:
-
-1. Clarification Phase:
-   • Updates the changelog and asks for any necessary clarifications.
-2. Test First Approach:
-   • Generates a test case and ensures it fails, confirming that the test is effectively targeting the desired behavior.
-3. Human Confirmation:
-   • The AI pauses for a human to review and confirm the spec, ensuring alignment before proceeding.
-4. Implementation Phase:
-   • Implements the code, self-checks for errors, installs necessary libraries, lints, formats, and runs tests to confirm they pass.
-
-**✅ Key Takeaways**
-
-When you explore the prompt, please notice:
-
-- CRITICAL PAUSE POINTS
-  - Strategic pauses allow the human to verify the work in small, reviewable chunks and redirect if necessary.
-- Command Explanations
-  - The prompt can include specific commands or scripts, guiding the AI in self-checking, running scripts, or managing dependencies.
-- Task-Specific Advice
-  - The prompt is the place to add any specific guidance or notes relevant only to the particular task at hand.
-
-#### 🚧 **Changes Review Prompt**
-
-To run a review, simply call the prompt:
-
-```markdown
-/changes-review
-```
-
-The AI will analyze the current git diffs, then reference other files in the repo for context. It will generate a comprehensive report for you to review before committing.
-
-#### ✅ **Focus Areas**
-
-1. **Business Logic:**
-
-   - Detects potential unwanted side effects or missing edge cases.
-
-2. **Code Quality:**
-
-   - Suggests improvements or refactor opportunities.
-
-3. **Security & Performance:**
-   - Identifies vulnerabilities or inefficiencies.
-
-#### 📌 **Why It Matters**
-
-- AI can handle the heavy lifting, but it's **your responsibility as the Senior** to validate the findings.
-- Double-check and ensure quality – small issues now can become big problems later. 😉
-
----
-
-## 📚 Learning Resources
-
-- [Instruction and Prompt Files](https://code.visualstudio.com/docs/copilot/copilot-customization)
-- [Agent Mode](https://code.visualstudio.com/docs/copilot/chat/chat-agent-mode)
-- [Copilot Reference](https://code.visualstudio.com/docs/copilot/reference/copilot-vscode-features)
-- [ICP Dev Docs](https://internetcomputer.org/docs)
-- [Rust CDK](https://internetcomputer.org/docs/current/developer-docs/backend/rust/)
-- [PicJS Doc](https://dfinity.github.io/pic-js/)
-- [Vitest Testing Framework](https://vitest.dev/)
-
----
-
-### 🤝 **Contributing**
-
-We welcome contributions! If you encounter a bug, have a feature request, or want to suggest improvements, please open an issue or submit a Pull Request.
-
-We especially welcome candidates of limits you face, consider using the **Limit Candidate Form Issue** – it helps us prioritize and address the most impactful limits effectively.
-
----
-
-## 📩 Submit Your Project!
-
-🎯 **Completed your challenge? Submit your project here:**  
-📢 [Submission Form](TODO)
-
-📌 **Want to explore more challenges? Return to the index:**  
-🔗 [IC Vibathon Index](https://github.com/pt-icp-hub/IC-Vibathon-Index)
-
----
-
-**Now go build something fast, tested, and production-ready 🚀🦀**
+**Built with ❤️ on the Internet Computer**

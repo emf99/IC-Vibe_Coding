@@ -1,40 +1,107 @@
 import { backend } from "../../../declarations/backend";
 
-/**
- * Service for handling all backend canister API calls
- */
-export const backendService = {
-  /**
-   * Sends a greeting to the backend and returns the response
-   * @param name Name to greet
-   * @returns Promise with the greeting response
-   */
-  async greet(name: string): Promise<string> {
-    return await backend.greet(name || "World");
-  },
+export interface ChatMessage {
+  role: string;
+  content: string;
+}
 
-  /**
-   * Fetches the current counter value
-   * @returns Promise with the current count
-   */
-  async getCount(): Promise<bigint> {
+export interface SupabaseResponse {
+  data: [] | [string];
+  error: [] | [string];
+}
+
+export interface QueryParseResult {
+  table: string;
+  query: string;
+  error: [] | [string];
+}
+
+export async function greet(name: string): Promise<string> {
+  try {
+    return await backend.greet(name);
+  } catch (error) {
+    console.error("Failed to greet:", error);
+    throw error;
+  }
+}
+
+export async function getCount(): Promise<bigint> {
+  try {
     return await backend.get_count();
-  },
+  } catch (error) {
+    console.error("Failed to get count:", error);
+    throw error;
+  }
+}
 
-  /**
-   * Increments the counter on the backend
-   * @returns Promise with the new count
-   */
-  async incrementCounter(): Promise<bigint> {
+export async function increment(): Promise<bigint> {
+  try {
     return await backend.increment();
-  },
+  } catch (error) {
+    console.error("Failed to increment:", error);
+    throw error;
+  }
+}
 
-  /**
-   * Sends a prompt to the LLM backend
-   * @param prompt The user's prompt text
-   * @returns Promise with the LLM response
-   */
-  async sendLlmPrompt(prompt: string): Promise<string> {
-    return await backend.prompt(prompt);
-  },
-};
+export async function setCount(value: bigint): Promise<bigint> {
+  try {
+    return await backend.set_count(value);
+  } catch (error) {
+    console.error("Failed to set count:", error);
+    throw error;
+  }
+}
+
+export async function chat(messages: ChatMessage[]): Promise<string> {
+  try {
+    return await backend.chat(messages);
+  } catch (error) {
+    console.error("Failed to chat:", error);
+    throw error;
+  }
+}
+
+export async function querySupabaseWithNaturalLanguage(
+  query: string,
+): Promise<any[]> {
+  try {
+    const result = await backend.query_supabase_with_natural_language(query);
+
+    if ("Ok" in result) {
+      const response = result.Ok;
+      // Handle optional array types properly
+      if (response.error && response.error.length > 0 && response.error[0]) {
+        throw new Error(response.error[0]);
+      }
+
+      if (response.data && response.data.length > 0 && response.data[0]) {
+        const data = JSON.parse(response.data[0]);
+        return Array.isArray(data) ? data : [data];
+      }
+
+      return [];
+    } else {
+      throw new Error(result.Err);
+    }
+  } catch (error) {
+    console.error("Failed to query Supabase with natural language:", error);
+    throw error;
+  }
+}
+
+export async function parseNaturalLanguageQuery(
+  query: string,
+): Promise<QueryParseResult> {
+  try {
+    const result = await backend.debug_parse_query(query);
+
+    if ("Ok" in result) {
+      return result.Ok;
+    } else {
+      throw new Error(result.Err);
+    }
+  } catch (error) {
+    console.error("Failed to parse natural language query:", error);
+    throw error;
+  }
+}
