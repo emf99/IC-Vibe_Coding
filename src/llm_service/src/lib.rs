@@ -31,7 +31,7 @@ pub struct QueryParseResult {
 #[ic_cdk::update]
 async fn parse_natural_language_to_sql(user_query: String) -> Result<QueryParseResult, String> {
     ic_cdk::println!("Parsing query: {}", user_query);
-    
+
     // Stwórz prompt systemowy dla SQL parsing
     let system_prompt = r#"You are a SQL query generator for a PostgreSQL database accessed via Supabase REST API.
 
@@ -79,7 +79,11 @@ Examples:
             // Sparsuj odpowiedź JSON
             match serde_json::from_str::<QueryParseResult>(&llm_response) {
                 Ok(result) => {
-                    ic_cdk::println!("Successfully parsed via Groq: table={}, query={}", result.table, result.query);
+                    ic_cdk::println!(
+                        "Successfully parsed via Groq: table={}, query={}",
+                        result.table,
+                        result.query
+                    );
                     Ok(result)
                 }
                 Err(_) => {
@@ -98,11 +102,11 @@ Examples:
 // Wywołanie Groq API dla bardzo szybkiego LLM
 async fn call_groq_api(messages: Vec<ChatMessage>) -> Result<String, String> {
     let api_url = "https://api.groq.com/openai/v1/chat/completions";
-    
+
     // Use environment variable for Groq API key
     let groq_api_key = option_env!("GROQ_API_KEY")
         .unwrap_or("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");
-    
+
     // Przygotuj payload dla Groq API
     let payload = serde_json::json!({
         "model": "llama-3.1-8b-instant", // Bardzo szybki model Groq
@@ -110,7 +114,7 @@ async fn call_groq_api(messages: Vec<ChatMessage>) -> Result<String, String> {
             serde_json::json!({
                 "role": match msg.role {
                     ChatRole::System => "system",
-                    ChatRole::User => "user", 
+                    ChatRole::User => "user",
                     ChatRole::Assistant => "assistant"
                 },
                 "content": msg.content
@@ -130,7 +134,10 @@ async fn call_groq_api(messages: Vec<ChatMessage>) -> Result<String, String> {
         method: HttpMethod::POST,
         body: Some(payload.to_string().into_bytes()),
         max_response_bytes: Some(2048),
-        transform: Some(TransformContext::from_name("transform".to_string(), serde_json::json!({}).to_string().into_bytes())),
+        transform: Some(TransformContext::from_name(
+            "transform".to_string(),
+            serde_json::json!({}).to_string().into_bytes(),
+        )),
         headers: vec![
             HttpHeader {
                 name: "Content-Type".to_string(),
@@ -147,17 +154,17 @@ async fn call_groq_api(messages: Vec<ChatMessage>) -> Result<String, String> {
         Ok((response,)) => {
             let response_body = String::from_utf8(response.body)
                 .map_err(|_| "Invalid response encoding".to_string())?;
-            
+
             ic_cdk::println!("Groq API response: {}", response_body);
-            
+
             // Sparsuj odpowiedź Groq API
             let api_response: serde_json::Value = serde_json::from_str(&response_body)
                 .map_err(|_| "Failed to parse Groq API response".to_string())?;
-            
+
             let content = api_response["choices"][0]["message"]["content"]
                 .as_str()
                 .ok_or("No content in Groq API response")?;
-            
+
             Ok(content.to_string())
         }
         Err((code, message)) => {
@@ -171,22 +178,22 @@ async fn call_groq_api(messages: Vec<ChatMessage>) -> Result<String, String> {
 async fn parse_query_smart_fallback(user_query: String) -> Result<QueryParseResult, String> {
     let query_lower = user_query.to_lowercase();
     ic_cdk::println!("Smart parsing: {}", query_lower);
-    
+
     // Rozpoznaj tabelę
     let table = if query_lower.contains("todo") || query_lower.contains("task") {
         "todos"
     } else if query_lower.contains("user") {
-        "users" 
+        "users"
     } else if query_lower.contains("post") {
         "posts"
     } else {
         // Domyślnie todos dla zapytań ogólnych
         "todos"
     };
-    
+
     // Zbuduj zapytanie Supabase
     let mut query_parts: Vec<String> = vec![];
-    
+
     // Określ kolumny do wyboru
     if query_lower.contains("only id") || query_lower.contains("just id") {
         query_parts.push("select=id".to_string());
@@ -197,24 +204,32 @@ async fn parse_query_smart_fallback(user_query: String) -> Result<QueryParseResu
     } else {
         query_parts.push("select=*".to_string());
     }
-    
+
     // Filtry dla todos
     if table == "todos" {
         // Status filters
-        if query_lower.contains("completed") || query_lower.contains("done") || query_lower.contains("finished") {
+        if query_lower.contains("completed")
+            || query_lower.contains("done")
+            || query_lower.contains("finished")
+        {
             query_parts.push("is_done=eq.true".to_string());
-        } else if query_lower.contains("incomplete") || query_lower.contains("not done") || 
-                  query_lower.contains("pending") || query_lower.contains("unfinished") {
+        } else if query_lower.contains("incomplete")
+            || query_lower.contains("not done")
+            || query_lower.contains("pending")
+            || query_lower.contains("unfinished")
+        {
             query_parts.push("is_done=eq.false".to_string());
         }
-        
+
         // Due date filters
-        if query_lower.contains("with due date") || (query_lower.contains("due") && !query_lower.contains("no due")) {
+        if query_lower.contains("with due date")
+            || (query_lower.contains("due") && !query_lower.contains("no due"))
+        {
             query_parts.push("due_date=not.is.null".to_string());
         } else if query_lower.contains("no due date") || query_lower.contains("without due date") {
             query_parts.push("due_date=is.null".to_string());
         }
-        
+
         // Specific status
         if query_lower.contains("status") {
             if query_lower.contains("active") {
@@ -223,7 +238,7 @@ async fn parse_query_smart_fallback(user_query: String) -> Result<QueryParseResu
                 query_parts.push("status=eq.archived".to_string());
             }
         }
-        
+
         // Text search in title - handle specific patterns first
         if query_lower.contains("title contains") || query_lower.contains("title like") {
             // Extract the search term after "title contains" or "title like"
@@ -247,29 +262,32 @@ async fn parse_query_smart_fallback(user_query: String) -> Result<QueryParseResu
         else if let Some(search_term) = extract_search_term(&query_lower) {
             query_parts.push(format!("title=ilike.*{}*", search_term));
         }
-        
+
         // ID specific queries
         if let Some(id) = extract_id(&query_lower) {
             query_parts.push(format!("id=eq.{}", id));
         }
     }
-    
+
     // Sortowanie
-    if query_lower.contains("latest") || query_lower.contains("newest") || query_lower.contains("recent") {
+    if query_lower.contains("latest")
+        || query_lower.contains("newest")
+        || query_lower.contains("recent")
+    {
         query_parts.push("order=created_at.desc".to_string());
     } else if query_lower.contains("oldest") || query_lower.contains("first") {
         query_parts.push("order=created_at.asc".to_string());
     }
-    
+
     // Limit
     if query_lower.contains("first 5") || query_lower.contains("top 5") {
         query_parts.push("limit=5".to_string());
     } else if query_lower.contains("first 10") || query_lower.contains("top 10") {
         query_parts.push("limit=10".to_string());
     }
-    
+
     let final_query = query_parts.join("&");
-    
+
     Ok(QueryParseResult {
         table: table.to_string(),
         query: final_query,
@@ -285,9 +303,17 @@ fn extract_search_term(query: &str) -> Option<String> {
             return Some(query[start + 1..start + 1 + end].to_string());
         }
     }
-    
+
     // Szukaj po słowach kluczowych
-    for keyword in &["with ", "containing ", "contains ", "about ", "titled ", "named ", "like "] {
+    for keyword in &[
+        "with ",
+        "containing ",
+        "contains ",
+        "about ",
+        "titled ",
+        "named ",
+        "like ",
+    ] {
         if let Some(pos) = query.find(keyword) {
             let remainder = &query[pos + keyword.len()..];
             if let Some(word_end) = remainder.find(' ') {
@@ -297,7 +323,7 @@ fn extract_search_term(query: &str) -> Option<String> {
             }
         }
     }
-    
+
     None
 }
 
@@ -316,7 +342,7 @@ fn extract_id(query: &str) -> Option<u32> {
             }
         }
     }
-    
+
     // Szukaj liczby na końcu zdania
     let words: Vec<&str> = query.split_whitespace().collect();
     if let Some(last_word) = words.last() {
@@ -324,7 +350,7 @@ fn extract_id(query: &str) -> Option<u32> {
             return Some(id);
         }
     }
-    
+
     None
 }
 
@@ -332,7 +358,7 @@ fn extract_id(query: &str) -> Option<u32> {
 #[ic_cdk::query]
 fn transform(raw: TransformArgs) -> HttpResponse {
     let mut headers = Vec::new();
-    if let Some(h) = raw.response.headers.get(0) {
+    if let Some(h) = raw.response.headers.first() {
         headers.push(h.clone());
     }
 

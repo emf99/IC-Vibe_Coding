@@ -135,7 +135,7 @@ Navigate to the **"Natural Query"** tab and try these example queries:
 ```
 "get all todos"
 "show me todos where due date is not null"
-"find todos that are completed" 
+"find todos that are completed"
 "show incomplete tasks"
 "list todos with due dates"
 "find todos without due dates"
@@ -146,7 +146,7 @@ Navigate to the **"Natural Query"** tab and try these example queries:
 
 1. **User Input** → Frontend captures natural language query
 2. **Backend Canister** → Receives query and forwards to LLM service canister
-3. **LLM Service** → 
+3. **LLM Service** →
    - **Primary**: Calls Groq API (llama-3.1-8b-instant) for ultra-fast parsing
    - **Fallback**: Uses local intelligent parsing if API unavailable
 4. **Query Conversion** → Natural language → Supabase REST API format
@@ -159,7 +159,7 @@ Navigate to the **"Natural Query"** tab and try these example queries:
 Input:  "show me todos where due date is not null"
 Output: "select=*&due_date=not.is.null"
 
-Input:  "find completed todos"  
+Input:  "find completed todos"
 Output: "select=*&is_done=eq.true"
 
 Input:  "get incomplete tasks with due dates"
@@ -169,14 +169,14 @@ Output: "select=*&is_done=eq.false&due_date=not.is.null"
 ### AI-Powered Features
 
 - **Groq Lightning Speed** - Sub-second response times
-- **Smart Fallback** - Works even when external AI is unavailable  
+- **Smart Fallback** - Works even when external AI is unavailable
 - **Query Validation** - Ensures safe and valid database queries
 - **Natural Understanding** - Handles various phrasings of the same intent
 
 ### Demo Features
 
 - **Counter Demo** - Basic canister interaction with state management
-- **Greeting Demo** - Simple text processing and response  
+- **Greeting Demo** - Simple text processing and response
 - **Natural Query** - Database querying with natural language powered by Groq AI
 - **LLM Chat** - Direct conversation interface (if implemented)
 
@@ -188,7 +188,7 @@ IC-Vibe_Coding/
 │   ├── backend/                 # Main Rust IC canister
 │   │   ├── src/lib.rs          # Backend logic, database integration, HTTP outcalls
 │   │   └── Cargo.toml          # Backend dependencies
-│   ├── llm_service/            # AI processing canister  
+│   ├── llm_service/            # AI processing canister
 │   │   ├── src/lib.rs          # Groq API integration, smart fallback parsing
 │   │   └── Cargo.toml          # LLM service dependencies
 │   └── frontend/               # React TypeScript frontend
@@ -240,11 +240,11 @@ The canisters communicate as follows:
 #[ic_cdk::update]
 async fn query_supabase_with_natural_language(user_query: String) -> Result<SupabaseResponse, String> {
     let llm_canister_id = Principal::from_text("be2us-64aaa-aaaaa-qaabq-cai")?;
-    
+
     // Call LLM service for query parsing
-    let parse_result: (Result<QueryParseResult, String>,) = 
+    let parse_result: (Result<QueryParseResult, String>,) =
         ic_cdk::call(llm_canister_id, "parse_natural_language_to_sql", (user_query,)).await?;
-    
+
     match parse_result.0 {
         Ok(query_result) => {
             // Execute the parsed query against Supabase
@@ -266,7 +266,7 @@ parse_natural_language_to_sql(user_query: String) -> Result<QueryParseResult, St
 // Groq API integration (internal)
 call_groq_api(messages: Vec<ChatMessage>) -> Result<String, String>
 
-// Smart fallback parser (internal)  
+// Smart fallback parser (internal)
 parse_query_smart_fallback(user_query: String) -> Result<QueryParseResult, String>
 ```
 
@@ -295,7 +295,7 @@ npm test
 ### Canister Security
 
 - **LLM Service** - Processes only text input, API keys stored securely in canister
-- **Backend Canister** - Secure credential storage, controlled database access  
+- **Backend Canister** - Secure credential storage, controlled database access
 - **Frontend Canister** - Public hosting, no sensitive operations
 
 ### API Configuration
@@ -361,7 +361,7 @@ dfx deploy --network ic
 
 # Check canister status
 dfx canister status --network ic backend
-dfx canister status --network ic llm_service  
+dfx canister status --network ic llm_service
 dfx canister status --network ic frontend
 ```
 
@@ -383,7 +383,7 @@ npm run generate-candid # Generate Candid interface declarations for all caniste
 dfx start              # Start local IC replica
 dfx deploy             # Deploy all canisters
 dfx deploy llm_service # Deploy only LLM service canister
-dfx deploy backend     # Deploy only backend canister  
+dfx deploy backend     # Deploy only backend canister
 dfx deploy frontend    # Deploy only frontend canister
 dfx stop               # Stop local IC replica
 ```
@@ -404,7 +404,7 @@ dfx stop               # Stop local IC replica
 "completed todos" → "is_done=eq.true"
 "incomplete tasks" → "is_done=eq.false"
 
-// Date filtering  
+// Date filtering
 "todos with due dates" → "due_date=not.is.null"
 "todos without due dates" → "due_date=is.null"
 
@@ -438,6 +438,7 @@ transform(raw: TransformArgs) -> HttpResponse
 ### Configuration
 
 The LLM service uses:
+
 - **Model**: `llama-3.1-8b-instant` (ultra-fast inference)
 - **Provider**: Groq Cloud API
 - **Fallback**: Local pattern matching and parsing
@@ -457,7 +458,7 @@ The LLM service uses:
 ### Development Guidelines
 
 - Test canister-to-canister communication thoroughly
-- Update Candid interfaces when changing canister APIs  
+- Update Candid interfaces when changing canister APIs
 - Use proper error handling for inter-canister calls
 - Test both Groq API and fallback parsing scenarios
 - Ensure API keys are secure and not exposed in logs
@@ -468,7 +469,7 @@ The LLM service uses:
 # Test LLM service directly
 dfx canister call llm_service parse_natural_language_to_sql '("show completed todos")'
 
-# Test fallback when API unavailable  
+# Test fallback when API unavailable
 # (temporarily disable API or use invalid key to test fallback)
 
 # Check service logs
