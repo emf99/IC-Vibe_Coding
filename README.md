@@ -2,17 +2,18 @@
 
 🚀 **Internet Computer Protocol (ICP) project with AI-powered natural language database queries**
 
-Transform plain English questions into structured database queries using advanced AI models running on the Internet Computer blockchain.
+Transform plain English questions into structured database queries using Groq's ultra-fast LLM API running on the Internet Computer blockchain.
 
 ## ✨ Features
 
-- 🤖 **Natural Language Processing** - Ask questions in plain English like "show me completed todos"
-- 🔍 **Real-time Query Parsing** - Watch your natural language get converted to structured queries
+- 🤖 **Natural Language Processing** - Ask questions in plain English like "show me todos where due date is not null"
+- 🚀 **Ultra-Fast AI** - Powered by Groq's lightning-fast LLM API (llama-3.1-8b-instant)
+- 🔍 **Real-time Query Parsing** - Watch your natural language get converted to Supabase REST API queries
 - 🌐 **Internet Computer Protocol** - Fully decentralized backend running on ICP canisters
-- 🔒 **Secure Architecture** - Database credentials never leave the IC canister
-- ⚡ **Real-time Results** - Instant query execution and formatted results
+- 🔒 **Secure Architecture** - API credentials securely stored in IC canisters
+- ⚡ **Instant Results** - Sub-second query execution with intelligent fallback parsing
 - 🎨 **Modern UI** - Clean, responsive interface built with React and Tailwind CSS
-- 🧠 **Distributed AI** - LLM processing handled by dedicated IC canister
+- 🧠 **Distributed AI** - LLM processing handled by dedicated IC canister with Groq integration
 
 ## 🛠️ Tech Stack
 
@@ -20,6 +21,7 @@ Transform plain English questions into structured database queries using advance
 
 - **Rust** - IC canister development
 - **Internet Computer Protocol (ICP)** - Decentralized hosting
+- **Groq API** - Ultra-fast LLM inference (llama-3.1-8b-instant)
 - **PocketIC + Vitest** - Testing framework
 
 ### Frontend
@@ -31,7 +33,8 @@ Transform plain English questions into structured database queries using advance
 ### Database & AI
 
 - **Supabase** - PostgreSQL database with REST API
-- **LLM Canister** - Dedicated AI processing canister for natural language understanding
+- **Groq Cloud** - Lightning-fast LLM API for natural language understanding
+- **Smart Fallback** - Local parsing when AI is unavailable
 
 ## 🏗️ Architecture
 
@@ -39,14 +42,17 @@ The project consists of three main canisters:
 
 ### 1. **Backend Canister** (`backend`)
 
-- Main application logic
+- Main application logic and HTTP outcalls
 - Secure Supabase credential management
-- Database query execution
-- Natural language query coordination
+- Database query execution and result formatting
+- Coordinates with LLM service for query parsing
 
-### 2. **LLM Canister** (`llm`)
+### 2. **LLM Service Canister** (`llm_service`)
 
-- AI model processing
+- **Groq API integration** - Ultra-fast LLM processing
+- **Natural language parsing** - Converts English to Supabase REST API format
+- **Intelligent fallback** - Local parsing when external API is unavailable
+- **Query validation** - Ensures generated queries are safe and valid
 - Natural language to SQL conversion
 - Query parsing and validation
 - Text analysis and understanding
@@ -64,6 +70,7 @@ The project consists of three main canisters:
 - [DFX](https://internetcomputer.org/docs/current/developer-docs/setup/install/) (Internet Computer SDK)
 - [Node.js](https://nodejs.org/) (v18+)
 - [Rust](https://rustup.rs/)
+- [Groq API Key](https://console.groq.com/) (for AI functionality)
 
 ### Installation
 
@@ -80,19 +87,26 @@ cd IC-Vibe_Coding
 npm install
 ```
 
-3. **Start the local IC replica**
+3. **Configure Groq API (Optional but recommended)**
+
+The LLM service includes a Groq API key for demo purposes, but for production:
+
+- Get your API key from [Groq Console](https://console.groq.com/)
+- Update the API key in `src/llm_service/src/lib.rs` (line ~94)
+
+4. **Start the local IC replica**
 
 ```bash
 dfx start --background --clean
 ```
 
-4. **Deploy all canisters**
+5. **Deploy all canisters**
 
 ```bash
-# Deploy LLM canister first (required for natural language processing)
-dfx deploy llm
+# Deploy LLM service first (provides AI functionality)
+dfx deploy llm_service
 
-# Deploy backend canister (depends on LLM canister)
+# Deploy backend canister (depends on LLM service)
 dfx deploy backend
 
 # Deploy frontend canister
@@ -102,15 +116,15 @@ dfx deploy frontend
 dfx deploy
 ```
 
-5. **Start the development server**
+6. **Start the development server**
 
 ```bash
 npm start
 ```
 
-6. **Open the application**
+7. **Open the application**
    - Visit `http://localhost:5173`
-   - The app will automatically use mock data for immediate testing
+   - Try the natural language queries in the "Natural Query" tab
 
 ## 🎯 Usage
 
@@ -120,27 +134,51 @@ Navigate to the **"Natural Query"** tab and try these example queries:
 
 ```
 "get all todos"
-"show completed todos"
-"find incomplete tasks"
-"list all users"
-"show me todos that are done"
-"find todos with id 1"
+"show me todos where due date is not null"
+"find todos that are completed" 
+"show incomplete tasks"
+"list todos with due dates"
+"find todos without due dates"
+"get todos by id 1"
 ```
 
 ### How It Works
 
 1. **User Input** → Frontend captures natural language query
-2. **Backend Canister** → Receives query and forwards to LLM canister
-3. **LLM Canister** → Processes natural language and returns structured query
-4. **Backend Canister** → Executes database query using parsed results
-5. **Frontend** → Displays formatted results to user
+2. **Backend Canister** → Receives query and forwards to LLM service canister
+3. **LLM Service** → 
+   - **Primary**: Calls Groq API (llama-3.1-8b-instant) for ultra-fast parsing
+   - **Fallback**: Uses local intelligent parsing if API unavailable
+4. **Query Conversion** → Natural language → Supabase REST API format
+5. **Backend Canister** → Executes database query using parsed results
+6. **Frontend** → Displays formatted results to user
+
+### Example Query Transformation
+
+```
+Input:  "show me todos where due date is not null"
+Output: "select=*&due_date=not.is.null"
+
+Input:  "find completed todos"  
+Output: "select=*&is_done=eq.true"
+
+Input:  "get incomplete tasks with due dates"
+Output: "select=*&is_done=eq.false&due_date=not.is.null"
+```
+
+### AI-Powered Features
+
+- **Groq Lightning Speed** - Sub-second response times
+- **Smart Fallback** - Works even when external AI is unavailable  
+- **Query Validation** - Ensures safe and valid database queries
+- **Natural Understanding** - Handles various phrasings of the same intent
 
 ### Demo Features
 
 - **Counter Demo** - Basic canister interaction with state management
-- **Greeting Demo** - Simple text processing and response
-- **LLM Chat** - Direct conversation with the LLM canister
-- **Natural Query** - Database querying with natural language (uses both backend and LLM canisters)
+- **Greeting Demo** - Simple text processing and response  
+- **Natural Query** - Database querying with natural language powered by Groq AI
+- **LLM Chat** - Direct conversation interface (if implemented)
 
 ## 🏗️ Project Structure
 
@@ -148,11 +186,11 @@ Navigate to the **"Natural Query"** tab and try these example queries:
 IC-Vibe_Coding/
 ├── src/
 │   ├── backend/                 # Main Rust IC canister
-│   │   ├── src/lib.rs          # Backend logic, database integration
+│   │   ├── src/lib.rs          # Backend logic, database integration, HTTP outcalls
 │   │   └── Cargo.toml          # Backend dependencies
-│   ├── llm/                    # LLM processing canister
-│   │   ├── src/lib.rs          # AI model integration
-│   │   └── Cargo.toml          # LLM dependencies
+│   ├── llm_service/            # AI processing canister  
+│   │   ├── src/lib.rs          # Groq API integration, smart fallback parsing
+│   │   └── Cargo.toml          # LLM service dependencies
 │   └── frontend/               # React TypeScript frontend
 │       ├── src/
 │       │   ├── components/     # Reusable UI components
@@ -177,7 +215,7 @@ npm run generate-candid
 
 # Deploy specific canisters
 dfx deploy backend
-dfx deploy llm
+dfx deploy llm_service
 ```
 
 ### Frontend Development
@@ -193,22 +231,43 @@ npm run format
 dfx deploy frontend
 ```
 
-### Canister Interaction
+### Canister Communication
 
 The canisters communicate as follows:
 
 ```rust
-// Backend canister calls LLM canister
-use ic_cdk::api::call::call;
-
+// Backend canister calls LLM service canister
 #[ic_cdk::update]
-async fn process_natural_language(query: String) -> String {
-    let llm_canister_id = /* LLM canister ID */;
-    let result: (String,) = call(llm_canister_id, "process_query", (query,))
-        .await
-        .expect("Failed to call LLM canister");
-    result.0
+async fn query_supabase_with_natural_language(user_query: String) -> Result<SupabaseResponse, String> {
+    let llm_canister_id = Principal::from_text("be2us-64aaa-aaaaa-qaabq-cai")?;
+    
+    // Call LLM service for query parsing
+    let parse_result: (Result<QueryParseResult, String>,) = 
+        ic_cdk::call(llm_canister_id, "parse_natural_language_to_sql", (user_query,)).await?;
+    
+    match parse_result.0 {
+        Ok(query_result) => {
+            // Execute the parsed query against Supabase
+            fetch_from_supabase(&query_result.table, &query_result.query).await
+        }
+        Err(e) => Err(format!("LLM parsing failed: {}", e))
+    }
 }
+```
+
+### LLM Service API
+
+The LLM service exposes these key functions:
+
+```rust
+// Main parsing function using Groq API + fallback
+parse_natural_language_to_sql(user_query: String) -> Result<QueryParseResult, String>
+
+// Groq API integration (internal)
+call_groq_api(messages: Vec<ChatMessage>) -> Result<String, String>
+
+// Smart fallback parser (internal)  
+parse_query_smart_fallback(user_query: String) -> Result<QueryParseResult, String>
 ```
 
 ### Testing
@@ -219,7 +278,13 @@ cargo test
 
 # Test specific canister
 cd src/backend && cargo test
-cd src/llm && cargo test
+cd src/llm_service && cargo test
+
+# Test LLM service directly
+dfx canister call llm_service parse_natural_language_to_sql '("show me completed todos")'
+
+# Test backend integration
+dfx canister call backend query_supabase_with_natural_language '("get all todos")'
 
 # Frontend tests (if configured)
 npm test
@@ -229,32 +294,48 @@ npm test
 
 ### Canister Security
 
-- **LLM Canister** - Processes only text input, no sensitive data access
-- **Backend Canister** - Secure credential storage, controlled database access
+- **LLM Service** - Processes only text input, API keys stored securely in canister
+- **Backend Canister** - Secure credential storage, controlled database access  
 - **Frontend Canister** - Public hosting, no sensitive operations
 
-### Database Setup (Optional)
+### API Configuration
+
+#### Groq API Setup
+
+1. Get your API key from [Groq Console](https://console.groq.com/)
+2. Update in `src/llm_service/src/lib.rs`:
+
+```rust
+let groq_api_key = "your_groq_api_key_here"; // Line ~94
+```
+
+3. Redeploy the LLM service:
+
+```bash
+dfx deploy llm_service
+```
+
+#### Supabase Setup (Optional)
 
 The project works with mock data by default. For real database integration:
 
 1. Create a [Supabase](https://supabase.com) account
-2. Create a new project
-3. Copy the template:
+2. Create a new project with the following schema:
 
-```bash
-cp .env.example .env
+```sql
+-- todos table
+CREATE TABLE todos (
+    id SERIAL PRIMARY KEY,
+    title TEXT NOT NULL,
+    description TEXT,
+    is_done BOOLEAN DEFAULT FALSE,
+    due_date TIMESTAMP,
+    status TEXT DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT NOW()
+);
 ```
 
-4. Add your credentials to `.env`:
-
-```bash
-VITE_SUPABASE_URL=your_supabase_url_here
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
-```
-
-### LLM Configuration
-
-The LLM canister can be configured for different AI models or providers. Check the canister documentation for specific setup requirements.
+3. Update credentials in backend canister code
 
 ## 🚀 Deployment
 
@@ -263,24 +344,24 @@ The LLM canister can be configured for different AI models or providers. Check t
 ```bash
 dfx start --background --clean
 
-# Deploy all canisters
-dfx deploy
+# Deploy all canisters (order matters!)
+dfx deploy llm_service  # Deploy AI service first
+dfx deploy backend      # Deploy backend (depends on LLM service)
+dfx deploy frontend     # Deploy frontend
 
-# Or deploy individually
-dfx deploy llm      # Deploy LLM canister first
-dfx deploy backend  # Deploy backend (depends on LLM)
-dfx deploy frontend # Deploy frontend
+# Or deploy all at once
+dfx deploy
 ```
 
 ### IC Mainnet
 
 ```bash
-# Deploy to IC mainnet
+# Deploy to IC mainnet (update API keys first!)
 dfx deploy --network ic
 
 # Check canister status
 dfx canister status --network ic backend
-dfx canister status --network ic llm
+dfx canister status --network ic llm_service  
 dfx canister status --network ic frontend
 ```
 
@@ -289,8 +370,8 @@ dfx canister status --network ic frontend
 After deployment, your canisters will be available at:
 
 - **Frontend**: `https://{frontend-canister-id}.ic0.app`
-- **Backend**: Accessible via Candid interface
-- **LLM**: Accessible via Candid interface
+- **Backend**: Accessible via Candid interface at `https://{backend-canister-id}.ic0.app/_/candid`
+- **LLM Service**: Accessible via Candid interface at `https://{llm-service-canister-id}.ic0.app/_/candid`
 
 ## 📋 Available Scripts
 
@@ -301,30 +382,67 @@ npm run format         # Format TypeScript and Rust code
 npm run generate-candid # Generate Candid interface declarations for all canisters
 dfx start              # Start local IC replica
 dfx deploy             # Deploy all canisters
-dfx deploy llm         # Deploy only LLM canister
-dfx deploy backend     # Deploy only backend canister
+dfx deploy llm_service # Deploy only LLM service canister
+dfx deploy backend     # Deploy only backend canister  
 dfx deploy frontend    # Deploy only frontend canister
 dfx stop               # Stop local IC replica
 ```
 
-## 🧠 LLM Canister Details
+## 🧠 LLM Service Details
 
-### Functionality
+### Core Functionality
 
-- Natural language processing and understanding
-- Query parsing and SQL generation
-- Text analysis and intent recognition
-- Response formatting and validation
+- **Groq API Integration** - Ultra-fast LLM inference using llama-3.1-8b-instant
+- **Natural Language Parsing** - Converts English to Supabase REST API format
+- **Smart Fallback System** - Local parsing when external API unavailable
+- **Query Validation** - Ensures generated queries are safe and valid
+
+### Supported Query Patterns
+
+```rust
+// Status filtering
+"completed todos" → "is_done=eq.true"
+"incomplete tasks" → "is_done=eq.false"
+
+// Date filtering  
+"todos with due dates" → "due_date=not.is.null"
+"todos without due dates" → "due_date=is.null"
+
+// Text searching
+"todos containing 'groceries'" → "title=ilike.*groceries*"
+
+// ID filtering
+"todo with id 5" → "id=eq.5"
+
+// Sorting & limiting
+"latest todos" → "order=created_at.desc"
+"first 5 todos" → "limit=5"
+```
 
 ### API Methods
 
-- `process_query(text: String) -> String` - Main NLP processing
-- `chat(messages: Vec<Message>) -> String` - Conversational interface
-- `parse_sql_intent(query: String) -> ParseResult` - Specific SQL parsing
+```rust
+// Main parsing function (uses Groq + fallback)
+parse_natural_language_to_sql(user_query: String) -> Result<QueryParseResult, String>
 
-### Dependencies
+// Direct Groq API call (internal)
+call_groq_api(messages: Vec<ChatMessage>) -> Result<String, String>
 
-The LLM canister may require specific dependencies or external service integration. Check the canister's `Cargo.toml` for requirements.
+// Intelligent fallback parser (internal)
+parse_query_smart_fallback(user_query: String) -> Result<QueryParseResult, String>
+
+// HTTP response transformer (for IC HTTP outcalls)
+transform(raw: TransformArgs) -> HttpResponse
+```
+
+### Configuration
+
+The LLM service uses:
+- **Model**: `llama-3.1-8b-instant` (ultra-fast inference)
+- **Provider**: Groq Cloud API
+- **Fallback**: Local pattern matching and parsing
+- **Temperature**: 0.1 (deterministic responses)
+- **Max Tokens**: 300 (optimized for query parsing)
 
 ## 🤝 Contributing
 
@@ -339,15 +457,30 @@ The LLM canister may require specific dependencies or external service integrati
 ### Development Guidelines
 
 - Test canister-to-canister communication thoroughly
-- Update Candid interfaces when changing canister APIs
+- Update Candid interfaces when changing canister APIs  
 - Use proper error handling for inter-canister calls
-- Document any new LLM capabilities or configuration options
+- Test both Groq API and fallback parsing scenarios
+- Ensure API keys are secure and not exposed in logs
+
+### LLM Service Development
+
+```bash
+# Test LLM service directly
+dfx canister call llm_service parse_natural_language_to_sql '("show completed todos")'
+
+# Test fallback when API unavailable  
+# (temporarily disable API or use invalid key to test fallback)
+
+# Check service logs
+dfx canister logs llm_service
+```
 
 ## 🔗 Links & Resources
 
 - [Internet Computer Documentation](https://internetcomputer.org/docs/)
 - [DFX SDK Reference](https://internetcomputer.org/docs/current/references/cli-reference/dfx-parent)
 - [Candid Interface Guide](https://internetcomputer.org/docs/current/references/candid-ref/)
+- [Groq Cloud API](https://console.groq.com/) - Ultra-fast LLM inference
 - [React Documentation](https://react.dev/)
 - [Tailwind CSS v4](https://tailwindcss.com/)
 - [Supabase Documentation](https://supabase.com/docs)
@@ -373,16 +506,28 @@ dfx stop
 dfx start --clean
 ```
 
-**LLM Canister Communication Issues**
+**LLM Service Communication Issues**
 
 ```bash
 # Check canister status
-dfx canister status llm
+dfx canister status llm_service
 dfx canister status backend
 
 # Redeploy with dependencies
-dfx deploy llm
+dfx deploy llm_service
 dfx deploy backend
+```
+
+**Groq API Issues**
+
+```bash
+# Test LLM service directly
+dfx canister call llm_service parse_natural_language_to_sql '("test query")'
+
+# Check logs for API errors
+dfx canister logs llm_service
+
+# Verify API key is valid (update in code and redeploy)
 ```
 
 **TypeScript Errors**
@@ -402,4 +547,4 @@ dfx deploy
 
 ---
 
-**Built with ❤️ on the Internet Computer**
+**Built with ❤️ on the Internet Computer • Powered by ⚡ Groq AI**

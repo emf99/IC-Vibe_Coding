@@ -5,6 +5,9 @@ use ic_cdk::api::management_canister::http_request::{
 };
 use std::cell::RefCell;
 
+mod config;
+use config::Config;
+
 thread_local! {
     static COUNTER: RefCell<u64> = RefCell::new(0);
 }
@@ -60,8 +63,8 @@ async fn fetch_from_supabase_no_encoding(
     table: String,
     query: String,
 ) -> Result<SupabaseResponse, String> {
-    let supabase_url = "https://tgsgxbmwhwcymfuodokl.supabase.co";
-    let supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRnc2d4Ym13aHdjeW1mdW9kb2tsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2NjY2ODQsImV4cCI6MjA2NjI0MjY4NH0.pkUJjiSEAzn3sG-C8iqdkyXPIWTHjypZ8HH31166uYM";
+    let supabase_url = Config::supabase_url();
+    let supabase_key = Config::supabase_anon_key();
 
     let url = if query.is_empty() {
         format!("{}/rest/v1/{}", supabase_url, table)
@@ -155,103 +158,7 @@ async fn debug_parse_query(user_query: String) -> Result<QueryParseResult, Strin
     // Return the fallback result for now since LLM isn't working properly
     llm_result
 }
-/*
-#[ic_cdk::update]
-async fn parse_natural_language_query_with_llm(
-    user_query: String,
-) -> Result<QueryParseResult, String> {
-    // Get the LLM canister ID from environment or use hardcoded value
-    let llm_canister_id = Principal::from_text("w36hm-eqaaa-aaaal-qr76a-cai")
-        .map_err(|_| "Invalid LLM canister ID".to_string())?;
 
-    // Create a detailed prompt for the LLM to parse the query
-    let system_prompt = r#"You are a database query parser. Parse natural language queries into Supabase REST API format.
-
-Available tables and columns:
-- todos: id (integer), title (text), is_done (boolean), created_at (timestamp)
-- users: id (integer), name (text), email (text), created_at (timestamp)
-- posts: id (integer), title (text), content (text), user_id (integer), created_at (timestamp)
-
-Convert natural language to Supabase query format:
-- "select=*" for all columns
-- "select=id,title" for specific columns
-- "completed=eq.true" for boolean filters (note: use 'completed', not 'is_done')
-- "due_date=not.is.null" for non-null date filters
-- "due_date=is.null" for null date filters
-- "id=eq.1" for exact matches
-- "title=ilike.*search*" for text search
-- "status=eq.pending" for status filters
-
-Respond ONLY with JSON in this exact format:
-{"table": "table_name", "query": "supabase_query_string", "error": null}
-
-If you can't parse the query, respond with:
-{"table": "", "query": "", "error": "explanation"}
-
-Examples:
-"get all todos" → {"table": "todos", "query": "select=*", "error": null}
-"show completed todos" → {"table": "todos", "query": "select=*&is_done=eq.true", "error": null}
-"find incomplete todos" → {"table": "todos", "query": "select=*&is_done=eq.false", "error": null}"#;
-
-    let user_prompt = format!("Parse this query: {}", user_query);
-    let full_prompt = format!("{}\n\n{}", system_prompt, user_prompt);
-
-    // Try different method names that might exist on the LLM canister
-    let llm_response = match ic_cdk::call::<(String,), (String,)>(
-        llm_canister_id,
-        "generate", // Try 'generate' first
-        (full_prompt.clone(),),
-    )
-    .await
-    {
-        Ok(response) => response,
-        Err(_) => {
-            // If 'generate' fails, try 'chat'
-            match ic_cdk::call::<(Vec<ChatMessage>,), (String,)>(
-                llm_canister_id,
-                "chat",
-                (vec![ChatMessage {
-                    role: "user".to_string(),
-                    content: full_prompt.clone(),
-                }],),
-            )
-            .await
-            {
-                Ok(response) => (response.0,),
-                Err(_) => {
-                    // If both fail, try 'complete'
-                    match ic_cdk::call::<(String,), (String,)>(
-                        llm_canister_id,
-                        "complete",
-                        (full_prompt,),
-                    )
-                    .await
-                    {
-                        Ok(response) => response,
-                        Err(e) => {
-                            // If all methods fail, fall back to simple parsing
-                            ic_cdk::println!("LLM canister call failed: {:?}", e);
-                            return parse_natural_language_query_fallback(user_query).await;
-                        }
-                    }
-                }
-            }
-        }
-    };
-
-    // Parse the LLM response as JSON
-    let response_text = llm_response.0;
-
-    // Try to parse the JSON response
-    match serde_json::from_str::<QueryParseResult>(&response_text) {
-        Ok(result) => Ok(result),
-        Err(_) => {
-            // If JSON parsing fails, try to extract meaningful info from text response
-            ic_cdk::println!("Failed to parse LLM JSON response: {}", response_text);
-            parse_natural_language_query_fallback(user_query).await
-        }
-    }
-} */
 // src/backend/src/lib.rs
 
 // Update the LLM types to match the canister interface
@@ -283,85 +190,37 @@ pub struct ChatRequestV0 {
 async fn parse_natural_language_query_with_llm(
     user_query: String,
 ) -> Result<QueryParseResult, String> {
-    let llm_canister_id = Principal::from_text("w36hm-eqaaa-aaaal-qr76a-cai")
+    let llm_canister_id = Principal::from_text("be2us-64aaa-aaaaa-qaabq-cai")
         .map_err(|_| "Invalid LLM canister ID".to_string())?;
 
-    // Create the system message with database schema
-    let system_message = ChatMessageV0 {
-        content: r#"You are a database query parser. Convert natural language queries into Supabase REST API format.
-
-Database schema:
-- todos: id (integer), title (text), description (text), is_done (boolean), due_date (timestamp), status (text), created_at (timestamp)
-- users: id (integer), name (text), email (text), created_at (timestamp)  
-- posts: id (integer), title (text), content (text), user_id (integer), created_at (timestamp)
-
-Convert to Supabase PostgREST format:
-- "select=*" for all columns
-- "select=id,title" for specific columns  
-- "is_done=eq.true" for boolean filters
-- "due_date=not.is.null" for non-null filters
-- "due_date=is.null" for null filters
-- "title=ilike.*search*" for text search
-
-Respond ONLY with JSON:
-{"table": "table_name", "query": "supabase_query_string", "error": null}
-
-Examples:
-"get all todos" → {"table": "todos", "query": "select=*", "error": null}
-"show completed todos" → {"table": "todos", "query": "select=*&is_done=eq.true", "error": null}
-"show todos where due date is not null" → {"table": "todos", "query": "select=*&due_date=not.is.null", "error": null}
-"find incomplete todos" → {"table": "todos", "query": "select=*&is_done=eq.false", "error": null}"#.to_string(),
-        role: ChatRoleV0::System,
-    };
-
-    // Create the user message
-    let user_message = ChatMessageV0 {
-        content: format!("Parse this query: {}", user_query),
-        role: ChatRoleV0::User,
-    };
-
-    // Create the chat request with a supported model
-    let chat_request = ChatRequestV0 {
-        model: "llama3.1:8b".to_string(), // Use supported model instead of gpt-4
-        messages: vec![system_message, user_message],
-    };
-
     ic_cdk::println!(
-        "Calling LLM canister v0_chat with model: llama3.1:8b, query: {}",
+        "Calling LLM service parse_natural_language_to_sql with query: {}",
         user_query
     );
 
-    // Call the LLM canister using v0_chat method
-    let llm_response: Result<(String,), _> =
-        ic_cdk::call(llm_canister_id, "v0_chat", (chat_request,)).await;
+    // Call the LLM service using parse_natural_language_to_sql method
+    let llm_response: Result<(Result<QueryParseResult, String>,), _> =
+        ic_cdk::call(llm_canister_id, "parse_natural_language_to_sql", (user_query.clone(),)).await;
 
     match llm_response {
-        Ok((response_text,)) => {
-            ic_cdk::println!("LLM response received: {}", response_text);
-
-            // Try to parse the JSON response
-            match serde_json::from_str::<QueryParseResult>(&response_text) {
-                Ok(result) => {
+        Ok((result,)) => {
+            match result {
+                Ok(query_result) => {
                     ic_cdk::println!(
-                        "Successfully parsed LLM response: table={}, query={}",
-                        result.table,
-                        result.query
+                        "Successfully parsed via LLM service: table={}, query={}",
+                        query_result.table,
+                        query_result.query
                     );
-                    Ok(result)
+                    Ok(query_result)
                 }
-                Err(parse_error) => {
-                    ic_cdk::println!(
-                        "Failed to parse LLM JSON response: {} | Error: {}",
-                        response_text,
-                        parse_error
-                    );
-                    // Fallback to manual parsing
+                Err(err) => {
+                    ic_cdk::println!("LLM service returned error: {}, using fallback", err);
                     parse_natural_language_query_fallback(user_query).await
                 }
             }
         }
         Err(e) => {
-            ic_cdk::println!("LLM canister call failed: {:?}", e);
+            ic_cdk::println!("LLM service call failed: {:?}", e);
             // Fallback to manual parsing
             parse_natural_language_query_fallback(user_query).await
         }
@@ -373,6 +232,26 @@ async fn parse_natural_language_query_fallback(
     user_query: String,
 ) -> Result<QueryParseResult, String> {
     let user_query_lower = user_query.to_lowercase();
+
+    // Validate if this looks like a database query
+    let database_keywords = [
+        "todo", "task", "user", "post", "show", "get", "find", "list", "all",
+        "completed", "done", "incomplete", "id"
+    ];
+    
+    let has_database_keywords = database_keywords.iter()
+        .any(|&keyword| user_query_lower.contains(keyword));
+    
+    if !has_database_keywords {
+        return Ok(QueryParseResult {
+            table: "".to_string(),
+            query: "".to_string(),
+            error: Some(format!(
+                "Unable to parse '{}' as a database query. Please use keywords like 'show', 'get', 'todos', 'users', etc.",
+                user_query
+            )),
+        });
+    }
 
     // Extract table name
     let table = if user_query_lower.contains("todos") || user_query_lower.contains("todo") {
@@ -421,8 +300,18 @@ async fn parse_natural_language_query_fallback(
         } else {
             "select=*".to_string()
         }
-    } else {
+    } else if user_query_lower.contains("show") || user_query_lower.contains("get") || user_query_lower.contains("list") {
+        // Allow basic "show" commands even without specific filters
         "select=*".to_string()
+    } else {
+        return Ok(QueryParseResult {
+            table: "".to_string(),
+            query: "".to_string(),
+            error: Some(format!(
+                "Could not understand what to do with '{}'. Try 'show all todos', 'get completed tasks', etc.",
+                user_query
+            )),
+        });
     };
 
     Ok(QueryParseResult {
@@ -432,7 +321,175 @@ async fn parse_natural_language_query_fallback(
     })
 }
 
-// ... rest of the existing functions (fetch_from_supabase, insert_to_supabase, transform) remain the same ...
+// Nowa funkcja używająca naszego własnego kanister LLM service
+#[ic_cdk::update]
+async fn parse_with_llm_service(user_query: String) -> Result<QueryParseResult, String> {
+    ic_cdk::println!("Using LLM service to parse query: {}", user_query);
+    
+    // ID naszego kanister LLM service
+    let llm_service_canister_id = Principal::from_text("br5f7-7uaaa-aaaaa-qaaca-cai")
+        .map_err(|_| "Invalid LLM service canister ID".to_string())?;
+    
+    ic_cdk::println!("Calling LLM service canister: {}", llm_service_canister_id);
+    
+    // Wywołaj nasz kanister LLM service
+    let llm_response: Result<(Result<QueryParseResult, String>,), _> = ic_cdk::call(
+        llm_service_canister_id,
+        "parse_natural_language_to_sql",
+        (user_query.clone(),),
+    ).await;
+
+    match llm_response {
+        Ok((result,)) => {
+            match result {
+                Ok(parsed_result) => {
+                    ic_cdk::println!(
+                        "LLM service successfully parsed: table={}, query={}",
+                        parsed_result.table,
+                        parsed_result.query
+                    );
+                    Ok(parsed_result)
+                }
+                Err(error) => {
+                    ic_cdk::println!("LLM service returned error: {}", error);
+                    parse_enhanced_fallback(user_query).await
+                }
+            }
+        }
+        Err(e) => {
+            ic_cdk::println!("Failed to call LLM service canister: {:?}", e);
+            parse_enhanced_fallback(user_query).await
+        }
+    }
+}
+
+// Ulepszona wersja fallback parsera
+#[ic_cdk::update]
+async fn parse_enhanced_fallback(user_query: String) -> Result<QueryParseResult, String> {
+    let query_lower = user_query.to_lowercase();
+    ic_cdk::println!("Parsing with enhanced fallback: {}", query_lower);
+    
+    // First validate if this looks like a meaningful database query
+    let database_keywords = [
+        "todo", "task", "user", "post", "show", "get", "find", "list", "all", 
+        "completed", "done", "incomplete", "pending", "due", "date", "title", "id"
+    ];
+    
+    let has_database_keywords = database_keywords.iter()
+        .any(|&keyword| query_lower.contains(keyword));
+    
+    if !has_database_keywords {
+        return Ok(QueryParseResult {
+            table: "".to_string(),
+            query: "".to_string(),
+            error: Some(format!(
+                "Unable to parse '{}' as a database query. Please use words like 'show todos', 'get users', 'find completed tasks', etc.",
+                user_query
+            )),
+        });
+    }
+    
+    // Określ tabelę
+    let table = if query_lower.contains("todo") || query_lower.contains("task") {
+        "todos"
+    } else if query_lower.contains("user") {
+        "users" 
+    } else if query_lower.contains("post") {
+        "posts"
+    } else {
+        // Only default to todos if there are other valid query keywords
+        if query_lower.contains("show") || query_lower.contains("get") || query_lower.contains("find") 
+            || query_lower.contains("all") || query_lower.contains("completed") || query_lower.contains("done") {
+            "todos"
+        } else {
+            return Ok(QueryParseResult {
+                table: "".to_string(),
+                query: "".to_string(),
+                error: Some(format!(
+                    "Could not determine table from query '{}'. Please specify 'todos', 'users', or 'posts'.",
+                    user_query
+                )),
+            });
+        }
+    };
+    
+    // Zbuduj query
+    let mut query_parts = vec!["select=*".to_string()];
+    let mut has_filters = false;
+    
+    // Filtry dla todos
+    if table == "todos" {
+        if query_lower.contains("completed") || query_lower.contains("done") {
+            query_parts.push("is_done=eq.true".to_string());
+            has_filters = true;
+        } else if query_lower.contains("incomplete") || query_lower.contains("not done") || query_lower.contains("pending") {
+            query_parts.push("is_done=eq.false".to_string());
+            has_filters = true;
+        }
+        
+        if query_lower.contains("due date") && query_lower.contains("not null") {
+            query_parts.push("due_date=not.is.null".to_string());
+            has_filters = true;
+        } else if query_lower.contains("due date") && query_lower.contains("null") {
+            query_parts.push("due_date=is.null".to_string());
+            has_filters = true;
+        }
+        
+        // Wyszukiwanie tekstowe w tytule
+        if let Some(search_term) = extract_search_term(&query_lower) {
+            let search_query = format!("title=ilike.*{}*", search_term);
+            query_parts.push(search_query);
+            has_filters = true;
+        }
+    }
+    
+    // If no specific filters were found but we have valid keywords, allow basic "all" queries
+    if !has_filters && !query_lower.contains("all") && !query_lower.contains("everything") 
+        && !query_lower.contains("show") && !query_lower.contains("get") && !query_lower.contains("list") {
+        return Ok(QueryParseResult {
+            table: "".to_string(),
+            query: "".to_string(),
+            error: Some(format!(
+                "Query '{}' doesn't specify what to retrieve. Try 'show all todos', 'get completed tasks', etc.",
+                user_query
+            )),
+        });
+    }
+    
+    let final_query = query_parts.join("&");
+    
+    Ok(QueryParseResult {
+        table: table.to_string(),
+        query: final_query,
+        error: None,
+    })
+}
+
+// Funkcja pomocnicza do wyciągania terminu wyszukiwania
+fn extract_search_term(query: &str) -> Option<String> {
+    // Proste parsowanie terminu w cudzysłowach lub po "with", "containing", etc.
+    if let Some(start) = query.find('"') {
+        if let Some(end) = query[start + 1..].find('"') {
+            return Some(query[start + 1..start + 1 + end].to_string());
+        }
+    }
+    
+    // Szukaj po "with" lub "containing"
+    for keyword in &["with ", "containing ", "about "] {
+        if let Some(pos) = query.find(keyword) {
+            let remainder = &query[pos + keyword.len()..];
+            if let Some(word_end) = remainder.find(' ') {
+                return Some(remainder[..word_end].to_string());
+            } else {
+                return Some(remainder.to_string());
+            }
+        }
+    }
+    
+    None
+}
+
+// ...existing code...
 
 #[ic_cdk::update]
 async fn query_supabase_with_natural_language(
@@ -464,8 +521,8 @@ async fn query_supabase_with_natural_language(
 // Update the main fetch function to not use URL encoding
 #[ic_cdk::update]
 async fn fetch_from_supabase(table: String, query: String) -> Result<SupabaseResponse, String> {
-    let supabase_url = "https://tgsgxbmwhwcymfuodokl.supabase.co";
-    let supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRnc2d4Ym13aHdjeW1mdW9kb2tsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2NjY2ODQsImV4cCI6MjA2NjI0MjY4NH0.pkUJjiSEAzn3sG-C8iqdkyXPIWTHjypZ8HH31166uYM";
+    let supabase_url = Config::supabase_url();
+    let supabase_key = Config::supabase_anon_key();
 
     ic_cdk::println!(
         "Fetching from Supabase - Table: {}, Query: {}",
@@ -545,8 +602,8 @@ async fn fetch_from_supabase(table: String, query: String) -> Result<SupabaseRes
 
 #[ic_cdk::update]
 async fn insert_to_supabase(table: String, data: String) -> Result<SupabaseResponse, String> {
-    let supabase_url = "https://tgsgxbmwhwcymfuodokl.supabase.co";
-    let supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRnc2d4Ym13aHdjeW1mdW9kb2tsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2NjY2ODQsImV4cCI6MjA2NjI0MjY4NH0.pkUJjiSEAzn3sG-C8iqdkyXPIWTHjypZ8HH31166uYM";
+    let supabase_url = Config::supabase_url();
+    let supabase_key = Config::supabase_anon_key();
 
     let url = format!("{}/rest/v1/{}", supabase_url, table);
 
@@ -646,4 +703,176 @@ async fn create_test_todos() -> Result<SupabaseResponse, String> {
     ic_cdk::println!("Creating test todos with data: {}", test_todos);
     insert_to_supabase("todos".to_string(), test_todos.to_string()).await
 }
+
+// Add missing prompt function with robust error handling
+#[ic_cdk::update]
+async fn prompt(user_prompt: String) -> String {
+    ic_cdk::println!("Received prompt: {}", user_prompt);
+    
+    // Check if this is a database query first
+    let prompt_lower = user_prompt.to_lowercase();
+    if prompt_lower.contains("todo") || prompt_lower.contains("user") || prompt_lower.contains("post") 
+        || prompt_lower.contains("show") || prompt_lower.contains("get") || prompt_lower.contains("find")
+        || prompt_lower.contains("all") || prompt_lower.contains("select") {
+        
+        ic_cdk::println!("Detected database query, processing with natural language parser");
+        
+        // Use the existing natural language processing for database queries
+        match query_supabase_with_natural_language(user_prompt.clone()).await {
+            Ok(response) => {
+                if let Some(data) = response.data {
+                    format!("Database query executed successfully. Results:\n{}", data)
+                } else if let Some(error) = response.error {
+                    format!("Database query failed: {}", error)
+                } else {
+                    "Database query executed but no data returned".to_string()
+                }
+            }
+            Err(error) => {
+                format!("Error processing database query: {}", error)
+            }
+        }
+    } else {
+        // For general LLM queries, handle the timeout issue gracefully
+        ic_cdk::println!("Detected general LLM query, attempting to call LLM canister");
+        
+        let llm_canister_id_result = Principal::from_text("be2us-64aaa-aaaaa-qaabq-cai");
+        
+        match llm_canister_id_result {
+            Ok(llm_canister_id) => {
+                // Define the chat message types matching LLM canister exactly
+                #[derive(CandidType)]
+                struct ChatRequestV0 {
+                    model: String,
+                    messages: Vec<ChatMessageV0>,
+                }
+                
+                #[derive(CandidType)]
+                struct ChatMessageV0 {
+                    content: String,
+                    role: ChatRoleV0,
+                }
+                
+                #[derive(CandidType)]
+                enum ChatRoleV0 {
+                    User,
+                    Assistant,
+                    System,
+                }
+                
+                let chat_request = ChatRequestV0 {
+                    model: "llama3.1:8b".to_string(),
+                    messages: vec![ChatMessageV0 {
+                        content: user_prompt.clone(),
+                        role: ChatRoleV0::User,
+                    }],
+                };
+                
+                ic_cdk::println!("Calling LLM canister with v0_chat method - this may take time for model loading");
+                
+                // Add a longer timeout and better error handling for model loading
+                match ic_cdk::call::<(ChatRequestV0,), (String,)>(llm_canister_id, "v0_chat", (chat_request,)).await {
+                    Ok((response,)) => {
+                        ic_cdk::println!("LLM canister responded successfully");
+                        response
+                    }
+                    Err(e) => {
+                        ic_cdk::println!("LLM canister call failed: {:?}", e);
+                        
+                        // Provide a helpful response when LLM fails
+                        let error_msg = format!("{:?}", e);
+                        if error_msg.contains("Timeout") || error_msg.contains("timeout") {
+                            format!(
+                                "I'm sorry, the AI model is taking longer than expected to respond (likely due to model loading time). \
+                                This is common on the first request. Please try again in a moment, or try a database-related query like 'show all todos' which I can handle directly.\n\n\
+                                Your original question was: \"{}\"", 
+                                user_prompt
+                            )
+                        } else if error_msg.contains("Panicked") || error_msg.contains("trap") {
+                            format!(
+                                "I'm experiencing a technical issue with the AI model service. \
+                                However, I can help you with database queries like 'show all todos', 'get completed tasks', etc.\n\n\
+                                For general questions, please try again later when the AI service is more stable.\n\n\
+                                Your original question was: \"{}\"", 
+                                user_prompt
+                            )
+                        } else {
+                            format!(
+                                "I'm currently unable to process your request due to a technical issue: {}\n\n\
+                                I can help you with database queries instead. Try asking 'show all todos' or 'get my tasks'.\n\n\
+                                Your original question was: \"{}\"", 
+                                error_msg, user_prompt
+                            )
+                        }
+                    }
+                }
+            }
+            Err(_) => {
+                ic_cdk::println!("Invalid LLM canister ID");
+                format!(
+                    "I'm sorry, there's a configuration issue with the AI service. \
+                    However, I can help you with database queries like 'show all todos', 'find completed tasks', etc.\n\n\
+                    Your question was: \"{}\"", 
+                    user_prompt
+                )
+            }
+        }
+    }
+}
+
+// Add a warm-up function to pre-load the LLM model
+#[ic_cdk::update]
+async fn warm_up_llm() -> String {
+    ic_cdk::println!("Warming up LLM model - this will pre-load llama3.1:8b");
+    
+    let llm_canister_id_result = Principal::from_text("be2us-64aaa-aaaaa-qaabq-cai");
+    
+    match llm_canister_id_result {
+        Ok(llm_canister_id) => {
+            #[derive(CandidType)]
+            struct ChatRequestV0 {
+                model: String,
+                messages: Vec<ChatMessageV0>,
+            }
+            
+            #[derive(CandidType)]
+            struct ChatMessageV0 {
+                content: String,
+                role: ChatRoleV0,
+            }
+            
+            #[derive(CandidType)]
+            enum ChatRoleV0 {
+                User,
+                Assistant,
+                System,
+            }
+            
+            let chat_request = ChatRequestV0 {
+                model: "llama3.1:8b".to_string(),
+                messages: vec![ChatMessageV0 {
+                    content: "Hello".to_string(), // Simple warm-up message
+                    role: ChatRoleV0::User,
+                }],
+            };
+            
+            ic_cdk::println!("Sending warm-up request to LLM canister");
+            
+            match ic_cdk::call::<(ChatRequestV0,), (String,)>(llm_canister_id, "v0_chat", (chat_request,)).await {
+                Ok((response,)) => {
+                    ic_cdk::println!("LLM warm-up successful");
+                    format!("LLM model warmed up successfully. Response: {}", response)
+                }
+                Err(e) => {
+                    ic_cdk::println!("LLM warm-up failed: {:?}", e);
+                    format!("LLM warm-up failed: {:?}", e)
+                }
+            }
+        }
+        Err(_) => {
+            "Invalid LLM canister ID".to_string()
+        }
+    }
+}
+
 ic_cdk::export_candid!();

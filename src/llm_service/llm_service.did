@@ -1,0 +1,17 @@
+type HttpHeader = record { value : text; name : text };
+type HttpResponse = record {
+  status : nat;
+  body : blob;
+  headers : vec HttpHeader;
+};
+type QueryParseResult = record {
+  table : text;
+  "query" : text;
+  error : opt text;
+};
+type Result = variant { Ok : QueryParseResult; Err : text };
+type TransformArgs = record { context : blob; response : HttpResponse };
+service : {
+  parse_natural_language_to_sql : (text) -> (Result);
+  transform : (TransformArgs) -> (HttpResponse) query;
+}

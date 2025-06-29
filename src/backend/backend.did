@@ -24,9 +24,13 @@ service : {
   greet : (text) -> (text) query;
   increment : () -> (nat64);
   insert_to_supabase : (text, text) -> (Result);
+  parse_enhanced_fallback : (text) -> (Result_1);
   parse_natural_language_query_fallback : (text) -> (Result_1);
   parse_natural_language_query_with_llm : (text) -> (Result_1);
+  parse_with_llm_service : (text) -> (Result_1);
+  prompt : (text) -> (text);
   query_supabase_with_natural_language : (text) -> (Result);
   set_count : (nat64) -> (nat64);
   transform : (TransformArgs) -> (HttpResponse) query;
+  warm_up_llm : () -> (text);
 }

@@ -4,6 +4,15 @@
       "type": "pull",
       "id": "w36hm-eqaaa-aaaal-qr76a-cai"
     },
+    "llm_service": {
+      "candid": "src/llm_service/llm_service.did",
+      "package": "llm_service",
+      "type": "custom",
+      "shrink": true,
+      "gzip": true,
+      "wasm": "target/wasm32-unknown-unknown/release/llm_service.wasm",
+      "build": ["bash ./scripts/generate-candid.sh llm_service"]
+    },
     "backend": {
       "dependencies": ["llm"],
       "candid": "src/backend/backend.did",
