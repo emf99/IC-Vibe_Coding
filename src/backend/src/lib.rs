@@ -63,8 +63,8 @@ async fn fetch_from_supabase_no_encoding(
     table: String,
     query: String,
 ) -> Result<SupabaseResponse, String> {
-    let supabase_url = Config::supabase_url();
-    let supabase_key = Config::supabase_anon_key();
+    let supabase_url = Config::supabase_url().map_err(|e| e.to_string())?;
+    let supabase_key = Config::supabase_anon_key().map_err(|e| e.to_string())?;
 
     let url = if query.is_empty() {
         format!("{}/rest/v1/{}", supabase_url, table)
@@ -566,8 +566,8 @@ async fn query_supabase_with_natural_language(
 // Update the main fetch function to not use URL encoding
 #[ic_cdk::update]
 async fn fetch_from_supabase(table: String, query: String) -> Result<SupabaseResponse, String> {
-    let supabase_url = Config::supabase_url();
-    let supabase_key = Config::supabase_anon_key();
+    let supabase_url = Config::supabase_url().map_err(|e| e.to_string())?;
+    let supabase_key = Config::supabase_anon_key().map_err(|e| e.to_string())?;
 
     ic_cdk::println!(
         "Fetching from Supabase - Table: {}, Query: {}",
@@ -647,8 +647,8 @@ async fn fetch_from_supabase(table: String, query: String) -> Result<SupabaseRes
 
 #[ic_cdk::update]
 async fn insert_to_supabase(table: String, data: String) -> Result<SupabaseResponse, String> {
-    let supabase_url = Config::supabase_url();
-    let supabase_key = Config::supabase_anon_key();
+    let supabase_url = Config::supabase_url().map_err(|e| e.to_string())?;
+    let supabase_key = Config::supabase_anon_key().map_err(|e| e.to_string())?;
 
     let url = format!("{}/rest/v1/{}", supabase_url, table);
 

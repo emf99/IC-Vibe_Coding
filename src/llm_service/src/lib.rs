@@ -105,7 +105,7 @@ async fn call_groq_api(messages: Vec<ChatMessage>) -> Result<String, String> {
 
     // Use environment variable for Groq API key
     let groq_api_key = option_env!("GROQ_API_KEY")
-        .unwrap_or("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");
+        .ok_or("GROQ_API_KEY environment variable not set")?;
 
     // Przygotuj payload dla Groq API
     let payload = serde_json::json!({
